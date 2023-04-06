@@ -1,0 +1,137 @@
+{% extends 'base.html' %} {% load static %} {% block title %}Diet and Nutrition
+Analyzer| Update Details{% endblock %} {% block body %}
+<head>
+  <link href='{% static "css/styless.css" %}' rel="stylesheet" />
+</head>
+
+<div class="py-4 mt-auto">
+  <div class="container px-4">
+    <div class="d-flex justify-content-center">
+      <h3>Update Profile and Weather Details</h3>
+    </div>
+    <div class="d-flex justify-content-center">
+      <p>Enter the details to get good results</p>
+    </div>
+
+    <div class="row">
+      <div class="col-lg-6 offset-lg-3">
+        <div class="card bg-secondary mb-3">
+          <div class="card-body">
+            <div class="form-group">
+              <form
+                action="{% url 'generate_report' %}"
+                method="POST"
+                onsubmit="return validateInputs()"
+                enctype="multipart/form-data"
+              >
+                {% csrf_token %}
+                <div class="cc-box box">
+                  <h2 class="box-title">Age:</h2>
+                  <div class="input-group">
+                    <label for="username" class="user-input-label"
+                      >Enter your age :</label
+                    >
+                    <input
+                      id="age"
+                      type="text"
+                      name="age"
+                      class="user-input"
+                      value="{{user.age}}"
+                    />
+                  </div>
+                  <h2 class="box-title">Gender</h2>
+                  <div class="input-group">
+                    <label class="user-input-label" for="gender"
+                      >Select you gender</label
+                    >
+                    <select class="user-input" name="gender" id="gender">
+                      <option value="M" class="user-input">Male</option>
+                      <option value="F" class="user-input">Female</option>
+                    </select>
+                  </div>
+                  <h2 class="box-title">Weight</h2>
+                  <div class="input-group">
+                    <label for="weightt" class="user-input-label"
+                      >Enter your Weight(KG)</label
+                    >
+                    <input
+                      class="user-input"
+                      id="weightt"
+                      type="text"
+                      name="weightt"
+                      value="{{ user.weightt }}"
+                    /><br />
+                  </div>
+                  <h2 class="box-title">Height</h2>
+                  <div class="input-group">
+                    <label for="height" class="user-input-label"
+                      >Height in Centimeters</label
+                    >
+                    <input
+                      class="user-input"
+                      id="height"
+                      type="text"
+                      name="height"
+                      value="{{ user.height }}"
+                    /><br />
+                  </div>
+                  <h2 class="box-title">Climate</h2>
+
+                  <div class="input-group">
+                    <label class="user-input-label" for="climate"
+                      >Choose climate</label
+                    >
+                    <select class="user-input" name="climate" id="climate">
+                      <option class="user-input" value="C">Cool</option>
+                      <option class="user-input" value="H">Hot</option>
+                      <option class="user-input" value="M">Mild</option></select
+                    ><br />
+                  </div>
+                  <button type="submit" class="button">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block script %}
+<script type="module" src="{% static 'js/foodLog.js' %}"></script>
+<script>
+  function validateInputs() {
+    var ageInput = document.getElementById("age");
+    var ageRegex = /^\d+$/;
+
+    var weightInput = document.getElementById("weightt");
+    var weightValue = weightInput.value.trim();
+    var weightRegex = /^\d+$/;
+    var heightInput = document.getElementById("height");
+    var heightValue = heightInput.value.trim();
+    var heightRegex = /^\d+$/;
+    if (!ageValue.match(ageRegex) || ageValue < 4 || ageValue > 120) {
+      alert("Please enter a valid age");
+      return false;
+    }
+    if (
+      !weightValue.match(weightRegex) ||
+      weightValue < 4 ||
+      weightValue > 130
+    ) {
+      alert("Please enter a valid weight");
+      return false;
+    }
+    if (
+      !heightValue.match(heightRegex) ||
+      heightValue < 40 ||
+      heightValue > 240
+    ) {
+      alert("Please enter a valid height");
+      return false;
+    }
+
+    return true;
+  }
+</script>
+{% endblock %}

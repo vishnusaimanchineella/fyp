@@ -1,0 +1,436 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Diet and Nutrition Analyzer | Food Log{% endblock %}
+
+{% block body %}
+<div class='py-4 mt-auto'>
+    <div class='container-fluid px-4'>
+
+        <div class='row justify-content-center'>
+            <div class='col-xl-12'>
+                
+                    <div class='row'>
+                        <div class='col-md-6 mt-4'>
+
+                            <div class='card bg-secondary mb-3'>
+                                <div class='card-header'>
+                                    <h5>Select food to add to the Food Log</h5>
+                                </div>
+                                <div class='card-body'>
+
+                                    <div class='form-group'>
+                                        <form method='POST'>
+                                            {% csrf_token %}
+                                            <div class='form-group'>
+                                                <div class='row'>
+                                                    <div class='col-8'>
+                                                        <select class='form-select' name='food_consumed' id='food_consumed'>
+                                                            {% for food in foods %}
+                                                                <option value='{{food.food_name}}'>
+                                                                    {{ food.food_name }}
+                                                                </option>
+                                                            {% endfor %}
+                                                        </select>
+                                                    </div>
+                                                    <div class='col-4'>
+                                                       
+                                                            
+                                                        <button type='submit' onclick="checkTotalCalories()"class='btn btn-primary'>
+                                                            Add Food
+                                                        </button>
+                                                    
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div class='card bg-secondary mb-3'>
+
+                                <div class='card-header'
+                                    <h5>Food consumed today</h5>
+                                    <h5><strong class='text-primary'>{% now 'D, jS F Y' %}</strong></h5>
+                                </div>
+                                <div class='card-body'>
+
+                                    <table id='foodtable' class='table table-hover'>
+                                        <thead>
+                                            <tr>
+                                                <th scope='col' class='col-md-2'>Food Item</th>
+                                                <th scope='col' class='col-md-2'>Calories</th>
+                                                <th scope='col' class='col-md-2'>Fat (g) in 100g</th>
+                                                <th scope='col' class='col-md-2'>Carbs (g) in 100g</th>
+                                                <th scope='col' class='col-md-2'>Protein (g) in 100g</th>
+                                                <th scope='col' class='col-md-2'></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {% for food_item in user_food_log %}
+                                            <tr>
+                                                <td class='col-md-2'>{{ food_item.food_consumed.food_name }}</td>
+                                                <td class='col-md-2'>{{ food_item.food_consumed.calories }}</td>
+                                                <td class='col-md-2'>{{ food_item.food_consumed.fat }}</td>
+                                                <td class='col-md-2'>{{ food_item.food_consumed.carbohydrates }}</td>
+                                                <td class='col-md-2'>{{ food_item.food_consumed.protein }}</td>   
+                                                <td>
+                                                    <a class='btn btn-danger' href="{% url 'food_log_delete' food_item.id %}">
+                                                        <i class='fas fa-trash-alt'></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                            <tr>
+                                                <td id='foodName' class='col-md-2'><b>Total</b></td>
+                                                <td id='totalCalories' class='col-md-2'><b></b></td>
+                                                <td id='totalFat' class='col-md-2'><b></b></td>
+                                                <td id='totalCarbohydrates' class='col-md-2'><b></b></td>
+                                                <td id='totalProtein' class='col-md-2'><b></b></td>
+                                                <td></td>     
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    
+                                </div>
+                            </div>
+                            
+                        </div>
+                        
+                        <div class='col-md-6 mt-4'>
+
+                            <div class='card bg-secondary mb-3'>
+                                <div class='card-header'>
+                                    <h5>Daily Calorie Goal - <strong class='text-primary' id="nch">{{user.neededcalorieshigh}}</strong></h5>
+                                </div>
+                                <div class='card-body justify-content-center'>
+
+                                    <div class='progress' style="height: 40px;">
+                                        <div 
+                                            id='progressBar'
+                                            class='progress-bar progress-bar-striped progress-bar-animated' 
+                                            role='progressbar' 
+                                            aria-valuenow='0' 
+                                            aria-valuemin='0' 
+                                            aria-valuemax='100' 
+                                            style='width: 0%; font-size: 25px;'
+                                        >0%</div>
+                                    </div>
+
+                                </div>
+                                
+                                <button style="margin-top: 20px"; onclick="generateReport()"type="click">Generate Report</button>
+                            
+                            </div>
+
+                            <div class='card bg-secondary mb-3'>
+                                <div class='card-header'>
+                                    <h5>Macronutrients Breakdown</h5>
+                                </div>
+                                <div class='card-body justify-content-center'>
+                                    <div class='chart-pie pt-4'>
+                                        <canvas id='myPieChart'></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+            </div>
+        </div>
+
+    </div>
+</div>    
+{% endblock %}
+
+
+{% block script %}
+    <!-- Page level plugins -->    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+
+    <!-- Page level custom scripts -->
+    <script src="{% static 'js/foodLog.js' %}"></script>
+    <script> 
+        var userage = "{{user.age}}";
+        var userheight= "{{user.height}}";
+        userheight=userheight/100;
+        var userweightt="{{user.weightt}}";
+        var usergender="{{user.gender}}";
+        var climate="{{user.climate}}";
+        var bmi = (userweightt/(userheight*userheight));
+        var userlowcalories="{{user.neededcalorieslow}}";
+        var userhighcalories="{{user.neededcalorieshigh}}";
+        var ua = Math.floor(userage).toString();
+
+
+        var caloriePercentage = (calories / userhighcalories) *  100;
+        caloriePercentage=Math.round(caloriePercentage);
+        if (caloriePercentage < 100) {
+            $('.progress-bar').animate({
+            width: caloriePercentage + '%'
+            }, 500);
+        
+            var interval = setInterval(function () {
+            $('.progress-bar').html(caloriePercentage.toFixed(0) + '%');
+            }, 500);
+        }
+
+
+
+        const weightLossExercises = [
+                                        '30 minutes of jogging',
+                                        '30 minutes of cycling',
+                                        '45 minutes of brisk walking',
+                                        '20 minutes of HIIT',
+                                        '30 minutes of swimming',
+                                        '20 minutes of jump rope',
+                                        '20 minutes of dancing',
+                                        '20 minutes of stair climbing',
+                                        '45 minutes of yoga',
+                                        '30 minutes of weight lifting',
+                                        ];
+        function generateRandomExercise() {
+        const randomExercises = [];
+        while (randomExercises.length < 3) {
+            const randomIndex = Math.floor(Math.random() * weightLossExercises.length);
+            const exercise = weightLossExercises[randomIndex];
+            if (!randomExercises.includes(exercise)) {
+            randomExercises.push(exercise);
+            }
+        }
+        return randomExercises;
+        }
+
+        
+        
+        var carbohydrateFoods = ["rice", "pasta", "bread", "potatoes", "sweet potatoes", "oats", "quinoa", "corn", "peas", "beans"];
+        var proteinFoods = ["chicken", "beef", "pork", "fish", "eggs", "yogurt", "milk", "cheese", "tofu", "nuts", "seeds"];
+        var fatFoods = ["avocado", "nuts", "seeds", "olive oil", "coconut oil", "butter", "cheese", "fatty fish", "dark chocolate", "bacon"];
+        function generateRandomFoods() {
+            const randomFoods = [];
+            while (randomFoods.length < 3) {
+                const randomIndex = Math.floor(Math.random() * carbohydrateFoods.length);
+                const food = carbohydrateFoods[randomIndex];
+                if (!randomFoods.includes(food)) {
+                randomFoods.push(food);
+                }
+            }
+                return randomFoods;
+                }
+        function generateRandomProteinFoods() {
+            const randomProteinFoods = [];
+            while (randomProteinFoods.length < 3) {
+                const randomIndex = Math.floor(Math.random() * proteinFoods.length);
+                const food = proteinFoods[randomIndex];
+                if (!randomProteinFoods.includes(food)) {
+                randomProteinFoods.push(food);
+                }
+            }
+            return randomProteinFoods;
+            }
+        function generateRandomFatFoods() {
+            const randomFoods = [];
+            while (randomFoods.length < 3) {
+                const randomIndex = Math.floor(Math.random() * fatFoods.length);
+                const food = fatFoods[randomIndex];
+                if (!randomFoods.includes(food)) {
+                randomFoods.push(food);
+                }
+            }
+            return randomFoods;
+            }
+
+        var bmiDict = {
+                        "children": {
+                            "underweight": {"min": 0, "max": 14.5},
+                            "healthy": {"min": 14.5, "max": 20.5},
+                           
+                        },
+                        "adults": {
+                            "underweight": {"min": 0, "max": 18.5},
+                            "healthy": {"min": 18.5, "max": 25},
+                            
+                        },
+                        "seniors": {
+                            "underweight": {"min": 0, "max": 22},
+                            "healthy": {"min": 22, "max": 27},
+                            
+                        },
+                        };
+        function checkMacroNutrients(){
+            
+                       
+                        if(fatPercentage<25 && carbohydratesPercentage<45 && proteinPercentage<10){
+                            alert("You have not eaten enough fats, proteins, carbohydrates. Please take more fats, proteins, carbohydrates today like  "+"Fats : "+generateRandomFatFoods() +" Carbohydrates : " +generateRandomFoods()+"Proteins :  "+ generateRandomProteinFoods() );
+                        }
+                        else if(fatPercentage<25 && carbohydratesPercentage<45){
+                            alert("You have not eaten enough fats, carbohydrates. Please take more fats, carbohydrates today like  "+"Fats : "+generateRandomFatFoods() +" Carbohydrates : " +generateRandomFoods());
+                        }
+                        else if(fatPercentage<25 && proteinPercentage<10){
+                            alert("You have not eaten enough fats, proteins. Please take more fats, proteins today like  "+"Fats : "+generateRandomFatFoods() +" Proteins : " +generateRandomProteinFoods());
+                        }
+                        else if(carbohydratesPercentage<45 && proteinPercentage<10){
+                            alert("You have not eaten enough carbohydrates, proteins. Please take more carbohydrates, proteins today like  "+"Carbohydrates : "+generateRandomFoods() +" Proteins : " +generateRandomProteinFoods());
+                        }
+                    
+                        else if(fatPercentage<25){
+                            alert("You have not reached your daily fat goal. Please take more fat today like "+generateRandomFatFoods());
+                        }
+
+                        else if(carbohydratesPercentage<45){
+                            alert("You have not reached your daily carbohydrate goal. Please take more carbohydrate today like "+generateRandomFoods());
+                        }
+                        else if(proteinPercentage<10){
+                            alert("You have not reached your daily protein goal. Please take more protein today like "+generateRandomProteinFoods());
+                        }
+                        else if(fatPercentage>35 && carbohydratesPercentage>65 && proteinPercentage>20){
+                            alert("You have exceeded your daily fat, carbohydrate, protein goal. Please dont take anymore fat, carbohydrate, protein today");
+                        }
+                        else if(fatPercentage>35 && carbohydratesPercentage>65){
+                            alert("You have exceeded your daily fat, carbohydrate goal. Please dont take anymore fat, carbohydrate today");
+                        }
+                        else if(fatPercentage>35 && proteinPercentage>20){
+                            alert("You have exceeded your daily fat, protein goal. Please dont take anymore fat, protein today");
+                        }
+                        else if(carbohydratesPercentage>65 && proteinPercentage>20){
+                            alert("You have exceeded your daily carbohydrate, protein goal. Please dont take anymore carbohydrate, protein today");
+                        }
+                        else if(fatPercentage>35){
+                            alert("You have exceeded your daily fat goal. Please dont take anymore fat today");
+                        }
+                        else if(carbohydratesPercentage>65){
+                            alert("You have exceeded your daily carbohydrate goal. Please dont take anymore carbohydrate today");
+                        }
+                        else if(proteinPercentage>20){
+                            alert("You have exceeded your daily protein goal. Please dont take anymore protein today");
+                        }
+                        else{return;}
+       
+    }
+       
+        function generateReport(){
+            if(userage<=17){
+                if((bmi<bmiDict["children"]["underweight"]["max"]) ){
+                    alert("You are underweight. Your BMI is low. Please eat more food daily");
+                    if(calories<userhighcalories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                       
+                    }
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                    
+                else if((bmi>bmiDict["children"]["underweight"]["max"]) && (bmi<bmiDict["children"]["healthy"]["max"])){
+                    alert("You are healthy. Your BMI is normal. Please eat healthy food daily");
+                    if(calories<userhighcalories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                       
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                }
+                else if((bmi>bmiDict["children"]["healthy"]["max"])){
+                    alert("You are overweight. Your BMI is high. Please eat less food daily");
+                    if(calories<userhighlories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                        
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                }
+            }
+            if(userage>=17 && userage<=49){
+                if((bmi<bmiDict["adults"]["underweight"]["max"]) ){
+                    alert("You are underweight. Your BMI is low. Please eat more food daily");
+                    if(calories<userhighcalories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                        
+                    }
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                    
+                else if((bmi>bmiDict["adults"]["underweight"]["max"]) && (bmi<bmiDict["adults"]["healthy"]["max"])){
+                    alert("You are healthy. Your BMI is normal. Please eat healthy food daily");
+                    if(calories<userhighcalories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                        
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                }
+                else if((bmi>bmiDict["adults"]["healthy"]["max"])){
+                    alert("You are overweight. Your BMI is high. Please eat less food daily");
+                    if(calories<userhighcalories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                        
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                }
+            }
+            if(userage>50){
+                if((bmi<bmiDict["seniors"]["underweight"]["max"]) ){
+                    alert("You are underweight. Your BMI is low. Please eat more food daily");
+                    if(calories<userhighcalories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                        
+                    }
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                    
+                else if((bmi>bmiDict["seniors"]["underweight"]["max"]) && (bmi<bmiDict["seniors"]["healthy"]["max"])){
+                    alert("You are healthy. Your BMI is normal. Please eat healthy food daily");
+                    if(calories<userhighcalories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                        
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                }
+                else if((bmi>bmiDict["seniors"]["healthy"]["max"])){
+                    alert("You are overweight. Your BMI is high. Please eat less food daily");
+                    if(calories<userhighcalories){
+                        alert("You have not reached your daily calorie goal. Please take more food today");
+                        
+                    }
+                    if(calories>userhighcalories){
+                        alert("You have exceeded your daily calorie goal. Please dont take anymore Food today and do some exercises today like "+generateRandomExercise());
+                        checkMacroNutrients();
+                    }
+                }
+            }
+            
+            return;
+        }
+    
+        function checkTotalCalories(){
+            if(calories>userhighcalories){
+                alert("You have exceeded your daily calorie goal. Please dont take anymore Food");
+            }
+            return;
+        }
+    </script>
+
+{% endblock %}
