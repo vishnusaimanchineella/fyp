@@ -21,8 +21,10 @@ Analyzer| Update Details{% endblock %} {% block body %}
               <form
                 action="{% url 'generate_report' %}"
                 method="POST"
-                onsubmit="return validateInputs()"
+                id ="user-form"
                 enctype="multipart/form-data"
+                onsubmit="return validateForm();"
+
               >
                 {% csrf_token %}
                 <div class="cc-box box">
@@ -87,7 +89,7 @@ Analyzer| Update Details{% endblock %} {% block body %}
                       <option class="user-input" value="M">Mild</option></select
                     ><br />
                   </div>
-                  <button type="submit" class="button">Save</button>
+                  <button type="submit"  class="button">Save</button>
                 </div>
               </form>
             </div>
@@ -98,7 +100,8 @@ Analyzer| Update Details{% endblock %} {% block body %}
   </div>
 </div>
 {% endblock %} {% block script %}
-<script type="module" src="{% static 'js/foodLog.js' %}"></script>
+<script src="{% static 'js/checkForm.js' %}"></script>
+<!--
 <script>
   function validateInputs() {
     var ageInput = document.getElementById("age");
@@ -134,4 +137,6 @@ Analyzer| Update Details{% endblock %} {% block body %}
     return true;
   }
 </script>
+-->
+
 {% endblock %}

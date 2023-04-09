@@ -11,7 +11,7 @@ import json
 from django.http import JsonResponse
 from .models import User, Food, FoodCategory, FoodLog, Image, Weight
 from .forms import FoodForm, ImageForm
-
+from django.http import HttpResponseBadRequest
 
 def index(request):
     '''
@@ -177,6 +177,11 @@ def generate_report_view(request):
         user.weightt = request.POST['weightt']
         user.height = request.POST['height']
         user.climate= request.POST['climate']
+        '''
+        try:
+            user.weight = int(user.weightt)
+        except ValueError:
+            return HttpResponseBadRequest("Invalid weight")'''
         if int(user.age)<=9 and int(user.age)>=5 and (user.gender=="M" or user.gender=="F") :
             user.neededcalorieslow= 1000
             user.neededcalorieshigh= 1400
@@ -208,8 +213,8 @@ def generate_report_view(request):
             user.neededcalorieslow= 2000
             user.neededcalorieshigh= 2600
         if user.climate=="H" or user.climate=="C":
-            user.neededcalorieslow=user.neededcalorieslow
-            user.neededcalorieshigh=user.neededcalorieshigh
+            user.neededcalorieslow=user.neededcalorieslow+200
+            user.neededcalorieshigh=user.neededcalorieshigh+200
         user.save()
         return redirect('food/list')
    else:
